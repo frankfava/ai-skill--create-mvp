@@ -1,6 +1,8 @@
-# /create-mvp — MVP workflow for Claude Code
+# /create-mvp — MVP workflow as a Skill
 
 A single slash command that turns a vague idea into a checkpointed, parallel-executed MVP — with real stopping points, classified failure handling, optional architecture decision records, and resume support.
+
+> Built for Claude Code; also compatible with Cursor and other agents that read Skills/commands from `~/.claude/commands/`.
 
 ```
 /create-mvp                    Interactive: requirements → plan → build
@@ -21,8 +23,9 @@ A single slash command that turns a vague idea into a checkpointed, parallel-exe
 |------|---------|
 | `src/*.md` | Source partials, concatenated at install time into one command file |
 | `install.sh` | POSIX installer (macOS, Linux, WSL, Git Bash) |
+| `examples/example-orchestrator/` | Illustrative orchestrator showing stages (serial + parallel) and phase files |
 
-The runtime command file lives at `~/.claude/commands/create-mvp.md` after install.
+The runtime command file lives at `~/.claude/commands/create-mvp.md` after install — the standard Skills/commands path read by Claude Code, Cursor, and other compatible agents.
 
 ---
 
@@ -121,6 +124,8 @@ An Opus subagent reviews each phase's deliverables against its acceptance criter
 
 ## Examples
 
+For a worked illustration of an orchestrator with serial and parallel stages, see [`examples/example-orchestrator/00-orchestrator.md`](examples/example-orchestrator/00-orchestrator.md).
+
 ```sh
 /create-mvp
 /create-mvp "internal tool for tracking team OKRs"
@@ -167,7 +172,7 @@ your-project/
 
 ## Requirements
 
-- [Claude Code](https://claude.ai/code) installed.
+- A compatible agent that reads Skills/commands from `~/.claude/commands/` — primarily [Claude Code](https://claude.ai/code), also Cursor and similar tools.
 - A POSIX shell for the installer (built-in on macOS, Linux, WSL, Git Bash).
 - `shasum` (used to compute the slug hash). Present on macOS, Linux, WSL, Git Bash.
 
