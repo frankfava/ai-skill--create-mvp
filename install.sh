@@ -125,37 +125,60 @@ fi
 
 # Build the command file
 out="$DEST_ABS/create-mvp.md"
+marker='^generated-by: ai-skill-create-mvp install.sh$'
 
-if [ -f "$out" ] && [ "$FORCE" -eq 0 ]; then
-    printf "  [exists]  create-mvp.md — overwrite? [y/N] "
-    reply=""
-    read -r reply || reply=""
-    case "$reply" in
-        y|Y|yes|YES) ;;
-        *)
-            echo "  [skip]    create-mvp.md"
-            echo ""
-            echo "Done."
-            exit 0
-            ;;
-    esac
-fi
+# Build to a temp file first so we can compare/cmp before publishing
+tmp_out="$out.tmp.$$"
+trap 'rm -f "$tmp_out"' EXIT INT TERM
 
-# Concatenate partials (lexical order from glob)
-: > "$out"
+: > "$tmp_out"
 for f in "$SRC_DIR"/*.md; do
     [ -f "$f" ] || continue
-    cat "$f" >> "$out"
+    cat "$f" >> "$tmp_out"
     # Ensure newline between partials
-    printf '\n' >> "$out"
+    printf '\n' >> "$tmp_out"
 done
 
-if [ -f "$out" ]; then
-    bytes=$(wc -c < "$out" | tr -d ' ')
-    echo "  [ok]      create-mvp.md ($bytes bytes from $partial_count partials)"
-else
-    echo "  [fail]    create-mvp.md" >&2
+if [ ! -s "$tmp_out" ]; then
+    echo "  [fail]    create-mvp.md (concatenation produced empty file)" >&2
     exit 1
+fi
+
+publish() {
+    mv "$tmp_out" "$out"
+    bytes=$(wc -c < "$out" | tr -d ' ')
+    echo "  [$1]      create-mvp.md ($bytes bytes from $partial_count partials)"
+}
+
+if [ -f "$out" ]; then
+    if grep -q "$marker" "$out" 2>/dev/null; then
+        # Existing file was previously installed by this script — safe to overwrite
+        if cmp -s "$tmp_out" "$out"; then
+            echo "  [unchanged] create-mvp.md (matches existing build)"
+            rm -f "$tmp_out"
+        else
+            publish "updated"
+        fi
+    elif [ "$FORCE" -eq 1 ]; then
+        echo "  [warn]    existing create-mvp.md has no install marker; --force overwriting anyway"
+        publish "forced"
+    else
+        printf "  [exists]  create-mvp.md (no install marker — possibly hand-edited)\n            Overwrite? [y/N] "
+        reply=""
+        read -r reply || reply=""
+        case "$reply" in
+            y|Y|yes|YES) publish "ok" ;;
+            *)
+                echo "  [skip]    create-mvp.md"
+                rm -f "$tmp_out"
+                echo ""
+                echo "Done."
+                exit 0
+                ;;
+        esac
+    fi
+else
+    publish "ok"
 fi
 
 # Deprecated resume-mvp.md cleanup

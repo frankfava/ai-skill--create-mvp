@@ -2,6 +2,7 @@
 description: Interactive MVP workflow — requirements → plan → build, with resume support
 argument-hint: [resume] [slug=<x>] [phase=N] [status] [stop-after=plan|N] [project one-liner]
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, TodoWrite
+generated-by: ai-skill-create-mvp install.sh
 ---
 
 # /create-mvp
