@@ -56,5 +56,15 @@ Rules:
 - Never assume. If the user says "it has auth", ask what kind.
 - Keep an internal running list. Show it on request.
 - If the user contradicts an earlier answer, flag it: *"Earlier you said X — want to revise that?"*
+- **Never close the loop yourself.** Even when the list feels comprehensive, your last action before the user says `done` MUST be asking **"What else?"** — give them the explicit chance to add more.
 
-**Exit condition:** user types `done`. Proceed to Phase 2 immediately, no ceremony.
+**Acceptable patterns:**
+- User answers → you dig deeper on the thread → … → you ask "What else?" → user says `done` → exit.
+- User answers → you ask "What else?" → user says `done` → exit.
+
+**Forbidden patterns:**
+- Recapping the list and announcing Phase 2 without "What else?" first.
+- Treating any reply other than `done` as implicit completion.
+- Skipping "What else?" because the list "looks complete".
+
+**Exit condition:** user types `done` *in direct response to a "What else?" prompt*. Never close the loop on your own initiative.
