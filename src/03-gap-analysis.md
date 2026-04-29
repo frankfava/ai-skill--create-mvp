@@ -1,5 +1,3 @@
----
-
 ## Phase 2 — Gap analysis + longevity check
 
 ### 2a. Longevity check (first question in Phase 2)

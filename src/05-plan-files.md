@@ -1,8 +1,6 @@
----
-
 ## Phase 4 — Build plan files
 
-Plans go to `~/.claude/meta/create-mvp/plans/<slug>/` — NOT to the project. They're process artifacts, not project artifacts.
+Plans go to `$MVP_HOME/plans/<slug>/` — NOT to the project. They're process artifacts, not project artifacts. (`MVP_HOME` is defined in the header; default resolves to `~/.local/share/create-mvp/`.)
 
 ### 4a. Resolve project path and pick a slug
 
@@ -16,21 +14,21 @@ default_slug="$(basename "$PROJECT_PATH" | tr '[:upper:]' '[:lower:]' | sed 's/[
 
 Ask the user:
 
-> Pick a slug for this MVP. Used for `~/.claude/meta/create-mvp/plans/<slug>/` and the registry.
+> Pick a slug for this MVP. Used for `$MVP_HOME/plans/<slug>/` and the registry.
 > Press enter to use default: **`<default_slug>`**
 
 If the user provides a custom slug:
 1. Sanitize: lowercase, replace non-`[a-z0-9-]` with `-`, collapse repeats, trim leading/trailing `-`.
 2. If empty after sanitization → fall back to `default_slug`.
 
-If the directory `~/.claude/meta/create-mvp/plans/<slug>/` already exists, ask:
+If the directory `$MVP_HOME/plans/<slug>/` already exists, ask:
 
 > A plan with slug `<slug>` already exists. Options:
 > 1. Overwrite (delete and start fresh)
 > 2. Pick another slug
 > 3. Resume that one (jump to Phase 8)
 
-Honor the user's choice. Record the final slug. Set `PLAN_DIR=~/.claude/meta/create-mvp/plans/<slug>` (use the literal expanded path going forward).
+Honor the user's choice. Record the final slug. Set `PLAN_DIR="$MVP_HOME/plans/<slug>"` (resolve `$MVP_HOME` once at this point and use the literal expanded path going forward).
 
 ### 4b. Bootstrap directories
 
@@ -38,11 +36,11 @@ Honor the user's choice. Record the final slug. Set `PLAN_DIR=~/.claude/meta/cre
 mkdir -p "$PLAN_DIR"
 ```
 
-The installer should have created `~/.claude/meta/create-mvp/registry.json`, but defensively:
+The installer should have created `$MVP_HOME/registry.json`, but defensively:
 
 ```sh
-mkdir -p ~/.claude/meta/create-mvp
-[ -f ~/.claude/meta/create-mvp/registry.json ] || printf '{\n  "version": 1,\n  "entries": {}\n}\n' > ~/.claude/meta/create-mvp/registry.json
+mkdir -p "$MVP_HOME"
+[ -f "$MVP_HOME/registry.json" ] || printf '{\n  "version": 1,\n  "entries": {}\n}\n' > "$MVP_HOME/registry.json"
 ```
 
 ### 4c. Two-pass approach
@@ -147,7 +145,7 @@ If this phase exceeds ~<N> TodoWrite updates or <M> tool calls without convergin
 
 ### 4f. Register the MVP
 
-Update `~/.claude/meta/create-mvp/registry.json`. Read the file, parse JSON, add or update the entry under `entries.<slug>`:
+Update `$MVP_HOME/registry.json`. Read the file, parse JSON, add or update the entry under `entries.<slug>`:
 
 ```json
 "<slug>": {

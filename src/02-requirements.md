@@ -1,5 +1,3 @@
----
-
 ## Phase 1 — Requirements (open-ended loop)
 
 Goal: draw out a complete picture of what the user wants built, without proposing solutions.

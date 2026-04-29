@@ -39,7 +39,15 @@ sh install.sh --dest PATH  # custom command location
 sh install.sh --force      # skip overwrite prompts; remove deprecated resume-mvp.md
 ```
 
-The installer also bootstraps `~/.claude/meta/create-mvp/plans/` and `~/.claude/meta/create-mvp/registry.json` (the central plan storage). Plans always go under user `~/.claude/meta/`, regardless of where the command file is installed.
+The installer also bootstraps the central plan storage at `MVP_HOME/plans/` and `MVP_HOME/registry.json`. `MVP_HOME` resolves in this order:
+
+1. `$CREATE_MVP_HOME` if set.
+2. Otherwise `$XDG_DATA_HOME/create-mvp` if `$XDG_DATA_HOME` is set.
+3. Otherwise the XDG default — on macOS and Linux this is `~/.local/share/create-mvp/`.
+
+Plans always go under the resolved `MVP_HOME`, regardless of where the command file is installed.
+
+> **Migrating from an older install?** Plans previously lived under `~/.claude/meta/create-mvp/`. The first time you run the new `install.sh`, it copies plans + registry from there to the new XDG location and prints a `[migrate]` notice. Your old directory is left in place — delete it manually once you're confident the move worked.
 
 ---
 
@@ -52,13 +60,13 @@ Runs a 6-phase workflow:
 1. **Requirements** — open-ended questions, one at a time. Optionally seed from a PRD/RFC/plan path. Keeps asking *"what else?"* until you say **done**.
 2. **Gap analysis** — probes for stack, testing, auth, deployment, security, observability, etc. Asks whether the project is a throwaway or meant to outlive the MVP. If outlive: writes 3–5 ADRs (`adr/NNNN-*.md`) for the major architectural decisions. ADRs go in the project repo.
 3. **Plan sketch** — drafts the phase breakdown in chat, with t-shirt sizing (S/M/L/XL), dependency graph, and parallel groups. Iterates until you confirm.
-4. **Plan files** — picks a slug (default `<basename>-<6char>`), writes `00-orchestrator.md` and per-phase plan files to `~/.claude/meta/create-mvp/plans/<slug>/`. Registers the MVP. Two-pass: stubs first, then deep fill.
+4. **Plan files** — picks a slug (default `<basename>-<6char>`), writes `00-orchestrator.md` and per-phase plan files to `$MVP_HOME/plans/<slug>/`. Registers the MVP. Two-pass: stubs first, then deep fill.
 5. **Build prep** — proposes permission wildcards, model mapping (Haiku/Sonnet/Opus driven by size), advisor subagent pattern, execution strategy. Checks if the project is a git repo and offers to initialise. Waits for your **go**.
 6. **Execute** — runs phases in parallel where the graph allows. An Opus advisor subagent reviews each phase against its acceptance criteria before marking `done`.
 
 ### `/create-mvp resume [slug=<x>] [phase=N] [status] [stop-after=plan|N]`
 
-- Reads `~/.claude/meta/create-mvp/registry.json` for in-progress MVPs.
+- Reads `$MVP_HOME/registry.json` for in-progress MVPs.
 - If exactly one entry's `project_path` matches your CWD, auto-picks it.
 - Otherwise shows a picker.
 - Prints current status (done/pending/blocked, retries).
@@ -75,7 +83,7 @@ Runs a 6-phase workflow:
 A few choices that matter:
 
 ### Plans live centrally, not in the project
-Plans are process artifacts, not project artifacts. They live at `~/.claude/meta/create-mvp/plans/<slug>/` and don't pollute the project repo. ADRs (when written) DO go in the project — those are decisions worth committing.
+Plans are process artifacts, not project artifacts. They live at `$MVP_HOME/plans/<slug>/` (default `~/.local/share/create-mvp/plans/<slug>/` on macOS/Linux) and don't pollute the project repo. ADRs (when written) DO go in the project — those are decisions worth committing.
 
 ### One command, two modes
 `/create-mvp` and `/create-mvp resume` are the same command. The Phase 0 router branches on the `resume` flag. One file to maintain, one runtime prompt, one cache key.
@@ -132,18 +140,17 @@ An Opus subagent reviews each phase's deliverables against its acceptance criter
 ## On-disk layout after install
 
 ```
-~/.claude/
-├── commands/
-│   └── create-mvp.md                       # single command file (concatenated from src/*)
-└── meta/
-    └── create-mvp/
-        ├── registry.json                   # slug → { project_path, summary, ... }
-        └── plans/
-            └── <slug>/
-                ├── 00-orchestrator.md      # status, graph, parallel groups
-                ├── 01-scaffold.md
-                ├── 02-data.md
-                └── ...
+~/.claude/commands/
+└── create-mvp.md                           # single command file (concatenated from src/*)
+
+~/.local/share/create-mvp/                  # = $MVP_HOME (XDG default; override via CREATE_MVP_HOME)
+├── registry.json                           # slug → { project_path, summary, ... }
+└── plans/
+    └── <slug>/
+        ├── 00-orchestrator.md              # status, graph, stages
+        ├── 01-scaffold.md
+        ├── 02-data.md
+        └── ...
 ```
 
 A target project itself stays clean:
@@ -171,7 +178,8 @@ your-project/
 If you previously installed `create-mvp.md` + `resume-mvp.md` from this repo:
 
 - Re-run `sh install.sh`. The installer detects and offers to remove the deprecated `resume-mvp.md`.
-- Old plans in `<project>/plans/` won't be auto-migrated. Either copy them manually into `~/.claude/meta/create-mvp/plans/<slug>/`, or just start fresh with `/create-mvp`.
+- Old plans in `<project>/plans/` won't be auto-migrated. Either copy them manually into `$MVP_HOME/plans/<slug>/`, or just start fresh with `/create-mvp`.
+- Plans previously stored at `~/.claude/meta/create-mvp/` are auto-copied to the new XDG location on first install (see the migration note in [Install](#install)).
 
 ---
 

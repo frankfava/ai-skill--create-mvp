@@ -1,18 +1,16 @@
----
-
 ## Phase 8 — Resume an in-progress MVP
 
 Reached only when `resume` was in `$ARGUMENTS` (Phase 0 routes here). Never start from scratch in this branch — if no MVP is found, halt and tell the user to run `/create-mvp` (without `resume`).
 
 ### 8a. Discover via registry
 
-Read `~/.claude/meta/create-mvp/registry.json`. If it doesn't exist or has zero entries:
+Read `$MVP_HOME/registry.json` (`MVP_HOME` is defined in the header). If it doesn't exist or has zero entries:
 
 > No in-progress MVP found. You must complete requirements first — run `/create-mvp` (without `resume`) and stay engaged at least through Phase 4, when the orchestrator file is written. Until then there's nothing to resume.
 
 Stop.
 
-For each entry, verify `~/.claude/meta/create-mvp/plans/<slug>/00-orchestrator.md` exists. Auto-prune entries whose orchestrator is missing — surface a one-line note for each pruned, and rewrite the registry.
+For each entry, verify `$MVP_HOME/plans/<slug>/00-orchestrator.md` exists. Auto-prune entries whose orchestrator is missing — surface a one-line note for each pruned, and rewrite the registry.
 
 ### 8b. Selection
 
@@ -41,7 +39,7 @@ Wait for selection. If `all`, expand each with its phase table, then re-ask.
 
 ### 8d. Load selected MVP
 
-Set `PLAN_DIR=~/.claude/meta/create-mvp/plans/<slug>`. Read `<PLAN_DIR>/00-orchestrator.md`. Parse:
+Set `PLAN_DIR="$MVP_HOME/plans/<slug>"`. Read `<PLAN_DIR>/00-orchestrator.md`. Parse:
 
 - Slug, project path
 - Summary, longevity

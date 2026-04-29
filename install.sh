@@ -32,8 +32,9 @@ Examples:
   sh install.sh --project
   sh install.sh --dest /opt/shared/.claude/commands --force
 
-Plans + registry always live under \$HOME/.claude/meta/create-mvp/, regardless
-of where the command file is installed.
+Plans + registry live under \${CREATE_MVP_HOME} if set, otherwise under
+\${XDG_DATA_HOME:-\$HOME/.local/share}/create-mvp/ — regardless of where the
+command file is installed. On macOS this resolves to \$HOME/.local/share/create-mvp/.
 EOF
 }
 
@@ -80,13 +81,31 @@ case "$TARGET" in
         ;;
 esac
 
-# Meta destination is always user-level
+# Meta destination — vendor-neutral path.
+# Priority: CREATE_MVP_HOME > $XDG_DATA_HOME/create-mvp > $HOME/.local/share/create-mvp
 META_BASE="${HOME:-${USERPROFILE:-}}"
 if [ -z "$META_BASE" ]; then
-    echo "Error: neither \$HOME nor \$USERPROFILE is set (needed for ~/.claude/meta/create-mvp)" >&2
+    echo "Error: neither \$HOME nor \$USERPROFILE is set (needed to resolve plans dir)" >&2
     exit 1
 fi
-META_DIR="$META_BASE/.claude/meta/create-mvp"
+if [ -n "${CREATE_MVP_HOME:-}" ]; then
+    META_DIR="$CREATE_MVP_HOME"
+else
+    XDG_DATA_HOME_RESOLVED="${XDG_DATA_HOME:-$META_BASE/.local/share}"
+    META_DIR="$XDG_DATA_HOME_RESOLVED/create-mvp"
+fi
+
+# One-time migration from the legacy ~/.claude/meta/create-mvp location.
+LEGACY_META_DIR="$META_BASE/.claude/meta/create-mvp"
+if [ -d "$LEGACY_META_DIR" ] && [ ! -d "$META_DIR" ]; then
+    echo "  [migrate] copying plans + registry from $LEGACY_META_DIR to $META_DIR"
+    mkdir -p "$(dirname "$META_DIR")"
+    if cp -R "$LEGACY_META_DIR" "$META_DIR" 2>/dev/null; then
+        echo "  [migrate] done — legacy dir kept at $LEGACY_META_DIR (delete manually when ready)"
+    else
+        echo "  [migrate] WARNING: copy failed; falling back to fresh bootstrap" >&2
+    fi
+fi
 
 # Sanity: src/ exists
 if [ ! -d "$SRC_DIR" ]; then
@@ -132,10 +151,19 @@ tmp_out="$out.tmp.$$"
 trap 'rm -f "$tmp_out"' EXIT INT TERM
 
 : > "$tmp_out"
+first=1
 for f in "$SRC_DIR"/*.md; do
     [ -f "$f" ] || continue
+    if [ "$first" -eq 1 ]; then
+        first=0
+    else
+        # Insert thematic break between partials. Source files no longer carry
+        # leading '---' (which broke IDE markdown rendering), so the installer
+        # injects the divider here.
+        printf '\n---\n\n' >> "$tmp_out"
+    fi
     cat "$f" >> "$tmp_out"
-    # Ensure newline between partials
+    # Ensure newline at end of partial
     printf '\n' >> "$tmp_out"
 done
 
