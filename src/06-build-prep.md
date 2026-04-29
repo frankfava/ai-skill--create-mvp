@@ -26,7 +26,7 @@ Tell the user to add these via `/permissions`.
 | L | Sonnet + Opus advisor at gate | Cheap bulk, smart review |
 | XL | Opus | Architectural weight justifies cost |
 
-**Advisor pattern:** at every phase gate, spin up a short-lived Opus subagent to review the phase's deliverables against its acceptance criteria before marking `done`. Cheap insurance.
+**Advisor pattern:** only on L/XL, spin up a short-lived Opus subagent to review the phase's deliverables against its acceptance criteria before marking `done`. Cheap insurance.
 
 ### 5c. Execution strategy
 

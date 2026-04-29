@@ -7,6 +7,12 @@ A single slash command that turns a vague idea into a checkpointed, parallel-exe
 /create-mvp resume             Resume an in-progress MVP
 ```
 
+**The good stuff:**
+- Phases that can be developed in parallel are executed concurrently — no serial-only build wall.
+- Planning assigns a t-shirt size (S/M/L/XL) per phase and maps it to a suitable model + effort, optimising token usage.
+- Advisor subagents review each phase's deliverables against its acceptance criteria — only on phases where complexity warrants it (only on L/XL).
+- Proposes a tailored permission wildcard set for the chosen stack, installing it at the project level, so the build doesn't stall on per-tool approval prompts.
+
 ---
 
 ## Contents
@@ -21,6 +27,10 @@ The runtime command file lives at `~/.claude/commands/create-mvp.md` after insta
 ---
 
 ## Install
+
+Download the repo and run the installer.
+
+eg. `cd ~/Downloads/ai-skill--create-mvp && sh install.sh`
 
 ```sh
 sh install.sh              # installs to ~/.claude/commands/  (user-level)
