@@ -46,7 +46,7 @@ Set `PLAN_DIR="$MVP_HOME/plans/<slug>"`. Read `<PLAN_DIR>/00-orchestrator.md`. P
 - Requirements
 - Phase table (status, retries, size, deps)
 - Dependency graph
-- Parallel groups
+- Stages (and per-stage mode: serial / parallel)
 - Stop point
 - Model & effort plan (if present — means planning is complete)
 
@@ -95,7 +95,7 @@ When planning finishes, continue to 8g.
 Follow Phase 6 exactly, with these resume-specific rules:
 
 #### 8g-i. Starting point
-Begin with the first parallel group whose every phase is `pending` **and** whose dependencies are all `done`. Skip phases already `done`.
+Begin with the first stage whose every phase is `pending` **and** whose dependencies are all `done`. Skip phases already `done`. If that stage is parallel and the user said "next phase" without naming one, confirm scope (single phase vs. whole stage) before launching.
 
 #### 8g-ii. Stop-point honor
 - `stop-after=plan` → only meaningful if 8f ran. Halt at the end of Phase 5 — same halt point Phase 5 honors for `stop-after=plan`.

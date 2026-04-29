@@ -85,9 +85,12 @@ graph TD
   3 --> 4
 ```
 
-## Parallel execution groups
-- Group A (after 1): [2, 3]
-- Group B (after A): [4]
+## Stages
+| Stage | Mode     | Phases |
+|-------|----------|--------|
+| 1     | serial   | [1]    |
+| 2     | parallel | [2, 3] |
+| 3     | serial   | [4]    |
 
 ## Model & effort plan
 <filled in Phase 5>

@@ -1,5 +1,3 @@
----
-
 ## Phase 5 — Build preparation
 
 Present all five items, then wait for **"go"**. If `stop-after=plan`, halt at the end of this phase and tell the user how to resume.
@@ -30,7 +28,7 @@ Tell the user to add these via `/permissions`.
 
 ### 5c. Execution strategy
 
-- **Task** tool launches parallel subagents — one per phase in the current parallel group, each given its phase plan file path (`<PLAN_DIR>/NN-...md`).
+- **Task** tool launches parallel subagents — one per phase in the current parallel stage, each given its phase plan file path (`<PLAN_DIR>/NN-...md`).
 - **TodoWrite** inside each phase tracks sub-tasks against the iteration ceiling.
 - Batch file reads/edits in single messages.
 - Commit after every phase (in the project repo, not the plan dir).
@@ -39,11 +37,11 @@ Tell the user to add these via `/permissions`.
 ### 5d. Summary table
 
 ```
-Phase  Size  Model          Parallel?  Advisor
-1      S     Haiku          no         no
-2      M     Sonnet         yes (A)    no
-3      L     Sonnet         yes (A)    yes (Opus)
-4      L     Sonnet         no         yes (Opus)
+Phase  Size  Model          Stage         Advisor
+1      S     Haiku          1 (serial)    no
+2      M     Sonnet         2 (parallel)  no
+3      L     Sonnet         2 (parallel)  yes (Opus)
+4      L     Sonnet         3 (serial)    yes (Opus)
 ```
 
 ### 5e. Git initialisation check

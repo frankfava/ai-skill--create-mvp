@@ -1,5 +1,3 @@
----
-
 ## Phase 3 — Plan sketch (in chat, not files yet)
 
 Draft the plan structure in chat before writing any files. Output:
@@ -8,7 +6,7 @@ Draft the plan structure in chat before writing any files. Output:
 2. **One-liner per phase** — objective + key deliverables.
 3. **T-shirt size per phase** — S / M / L / XL (sizing rubric below).
 4. **Dependency graph** — ASCII or mermaid.
-5. **Parallel groups** — which phases can run concurrently once deps are met.
+5. **Stages** — group phases into ordered stages. Each stage is either **serial** (its phases run in order) or **parallel** (its phases run concurrently). Stages themselves always run sequentially.
 6. **Risk flags** — phases with unknowns that may need a spike.
 
 **Sizing rubric:**

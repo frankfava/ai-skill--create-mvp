@@ -1,13 +1,11 @@
----
-
 ## Phase 6 — Execute
 
 1. Orchestrator: phase 1 → `in-progress`.
 2. Execute phase 1 inline (scaffold rarely parallelizes).
 3. Run acceptance criteria → on pass: commit, mark `done`. On fail: **Failure protocol** (Phase 7).
-4. For each subsequent parallel group:
-   - Launch one **Task** subagent per phase (model per 5b), input = phase plan file path (`<PLAN_DIR>/NN-...md`).
-   - Wait for all.
+4. For each subsequent stage (in order):
+   - **Serial stage** → execute its phases one at a time, in declared order, applying steps 2–3 to each.
+   - **Parallel stage** → if the user said "next phase" without naming one, confirm scope first (single phase number vs. all phases in this stage). Then launch one **Task** subagent per in-scope phase (model per 5b), input = phase plan file path (`<PLAN_DIR>/NN-...md`). Wait for all.
    - Launch **advisor subagent** (Opus) per completed phase to verify acceptance criteria.
    - Update orchestrator. Update registry `updated_at`. Commit code changes in the project repo.
 5. Honor stop point: if `stop-after=N` and phase N just finished, halt and announce resume instructions.
