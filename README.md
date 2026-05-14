@@ -22,7 +22,8 @@ A single slash command that turns a vague idea into a checkpointed, parallel-exe
 | Path | Purpose |
 |------|---------|
 | `src/*.md` | Source partials, concatenated at install time into one command file |
-| `install.sh` | POSIX installer (macOS, Linux, WSL, Git Bash) |
+| `install.sh` | POSIX installer for the Claude Code slash command (macOS, Linux, WSL, Git Bash) |
+| `export-skill.sh` | POSIX builder that packages the same source as a cloud Claude Skill (`SKILL.md` + `.zip`) |
 | `examples/example-orchestrator/` | Illustrative orchestrator showing stages (serial + parallel) and phase files |
 
 The runtime command file lives at `~/.claude/commands/create-mvp.md` after install — the standard Skills/commands path read by Claude Code, Cursor, and other compatible agents.
@@ -51,6 +52,21 @@ The installer also bootstraps the central plan storage at `MVP_HOME/plans/` and 
 Plans always go under the resolved `MVP_HOME`, regardless of where the command file is installed.
 
 > **Migrating from an older install?** Plans previously lived under `~/.claude/meta/create-mvp/`. The first time you run the new `install.sh`, it copies plans + registry from there to the new XDG location and prints a `[migrate]` notice. Your old directory is left in place — delete it manually once you're confident the move worked.
+
+### Build as a cloud Claude Skill
+
+For [cloud Claude Skills](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills) (claude.ai → Settings → Skills), run the export script instead:
+
+```sh
+sh export-skill.sh              # builds dist/create-mvp/SKILL.md + dist/create-mvp.zip
+sh export-skill.sh --no-zip     # SKILL.md only, skip the archive
+sh export-skill.sh --out PATH   # custom output root
+sh export-skill.sh --force      # overwrite without prompting
+```
+
+The script reuses the same `src/*.md` partials as `install.sh`, but swaps the Claude-Code frontmatter for the cloud-skill format (`name` + `description`) and writes `SKILL.md` (capitalised, as the spec requires). The `.zip` contains `create-mvp/SKILL.md` at the root — drop it into the Skills uploader as-is.
+
+> **Note:** the body of the skill is identical to the Claude Code command and references Claude-Code-specific bits like `$ARGUMENTS` and the local `MVP_HOME` filesystem path. Inside a cloud sandbox those won't substitute the same way; treat the cloud skill as a best-effort copy of the workflow for now.
 
 ---
 
