@@ -1,6 +1,6 @@
 ## Vocabulary
 
-- **phase** — the atomic unit of execution. Phases 0–8 are the canonical phases of `/create-mvp` itself; user MVPs also break work into numbered phases (`01-scaffold.md`, `02-data.md`, etc.). A phase is never split or merged at runtime.
+- **phase** — the atomic unit of execution. Phases 0–10 are the canonical phases of `/create-mvp` itself; user MVPs also break work into numbered phases (`01-scaffold.md`, `02-data.md`, etc.). A phase is never split or merged at runtime.
 - **stage** — an ordered group of phases. A stage runs as **serial** (its phases execute in order, one at a time) or **parallel** (its phases launch concurrently). Stages always run sequentially relative to one another.
 - "Next phase" is ambiguous when the upcoming stage is parallel — see Phase 0 / Phase 6 for the verification rule.
 - **`MVP_PROJECT`** — this MVP's slug folder (canonical `MVP_HOME/plans/<slug>/`). Holds the orchestrator, phase plans, `adrs/`, `memory/`. Use the token in plans; never its expanded path.

@@ -4,11 +4,17 @@ Reached only when `resume` was in `$ARGUMENTS` (Phase 0 routes here). Never star
 
 ### 8a. Discover via registry
 
-Read `$MVP_HOME/registry.json` (`MVP_HOME` is defined in the header). If it doesn't exist or has zero entries:
+Read `$MVP_HOME/registry.json` (`MVP_HOME` is defined in the header). If it doesn't exist or has zero entries, **self-heal before giving up** — the registry is a rebuildable cache; the orchestrators are the source of truth. Scan `$MVP_HOME/plans/*/00-orchestrator.md`:
 
-> No in-progress MVP found. You must complete requirements first — run `/create-mvp` (without `resume`) and stay engaged at least through Phase 4, when the orchestrator file is written. Until then there's nothing to resume.
+- **One or more found** → ask:
+  > Registry is empty but I found <N> plan folder(s) on disk: <slugs>. Rebuild the registry from them? (yes / no)
 
-Stop.
+  On **yes** → for each, run the **Register an MVP from its orchestrator** routine (below), then continue with the rebuilt registry. On **no** → show the "no in-progress MVP" message below and stop.
+- **None found** →
+
+  > No in-progress MVP found. You must complete requirements first — run `/create-mvp` (without `resume`) and stay engaged at least through Phase 4, when the orchestrator file is written. Until then there's nothing to resume. (To bring in a folder shared from elsewhere, use `/create-mvp import <path>`.)
+
+  Stop.
 
 For each entry, verify `$MVP_HOME/plans/<slug>/00-orchestrator.md` exists. Auto-prune entries whose orchestrator is missing — surface a one-line note for each pruned, and rewrite the registry.
 
@@ -39,9 +45,9 @@ Wait for selection. If `all`, expand each with its phase table, then re-ask.
 
 ### 8d. Load selected MVP
 
-Set `PLAN_DIR="$MVP_HOME/plans/<slug>"`. Read `<PLAN_DIR>/00-orchestrator.md`. Parse:
+Set `MVP_PROJECT="$MVP_HOME/plans/<slug>"`. Read `MVP_PROJECT/00-orchestrator.md`. Parse:
 
-- Slug, project path
+- Slug, project path (the **Project path** field — this is `PROJECT_ROOT`)
 - Summary, longevity
 - Requirements
 - Phase table (status, retries, size, deps)
@@ -83,7 +89,7 @@ Wait for confirmation.
 
 If the orchestrator exists but has no Model & effort plan section, the previous run stopped during planning. Resume inside the create flow at the right point:
 
-- No phase plan files in `<PLAN_DIR>` beyond the orchestrator → jump to Phase 4 (build plan files).
+- No phase plan files in `MVP_PROJECT` beyond the orchestrator → jump to Phase 4 (build plan files).
 - Phase plans exist but no Model & effort section → jump to Phase 5.
 
 Honor `stop-after=plan` here too.
@@ -129,3 +135,125 @@ When the run halts (either at stop point or because all phases are `done`):
    ```
 
 If all phases are `done`, also run the final pass from Phase 6, step 7: full test suite, README update, one-page summary.
+
+---
+
+## Register an MVP from its orchestrator (shared routine)
+
+Reconstructs a registry entry from a plan folder's orchestrator. The orchestrator is the source of truth; the registry is a derived index. Used by import (Phase 9) and by 8a's registry self-heal.
+
+Given a slug folder at `$MVP_HOME/plans/<slug>/`:
+
+1. Read `$MVP_HOME/plans/<slug>/00-orchestrator.md`. If it's missing, skip with a note: `<slug> has no orchestrator — not a valid plan folder`.
+2. Parse: **Project path** → `project_path`, **Summary** → `summary`, **Longevity** → `longevity`, **Stop point** → `stop_point`.
+3. Timestamps: `updated_at = now` (`date -u +%Y-%m-%dT%H:%M:%SZ`). Preserve `created_at` if the entry already exists; otherwise set it equal to `updated_at`.
+4. Write the entry under `entries.<slug>` in `$MVP_HOME/registry.json` — same shape and method as Phase 4f (jq, else read-modify-write via the Write tool).
+
+---
+
+## Phase 9 — Import a shared MVP
+
+Reached only when `import <path>` was in `$ARGUMENTS` (Phase 0 routes here). Brings a plan folder produced on another machine into this machine's `$MVP_HOME` and registers it so it can be resumed. **Never executes build phases** — it ends by pointing the user at `/create-mvp resume`.
+
+### 9a. Resolve the source
+
+`<path>` is the token after `import`. It may be:
+
+- a `.zip` → extract into a temp directory (`unzip -q <path> -d <tmp>`).
+- a directory → use in place.
+
+Locate the plan-folder root: the directory that directly contains `00-orchestrator.md` (if the archive wraps everything in a single top-level `<slug>/`, descend into it). If no `00-orchestrator.md` is found anywhere under the source:
+
+> No orchestrator found under `<path>` — that's not a `/create-mvp` plan folder.
+
+Stop.
+
+### 9b. Determine the slug
+
+Read the orchestrator's **Slug** field; sanitize (lowercase, non-`[a-z0-9-]`→`-`, collapse repeats, trim). Fall back to the source folder's basename if the field is missing or empty after sanitizing.
+
+### 9c. Collision check
+
+If `$MVP_HOME/plans/<slug>/` already exists:
+
+> A plan with slug `<slug>` already exists here. Options:
+> 1. Overwrite (replace the existing folder)
+> 2. Import under a new slug
+> 3. Cancel
+
+Honor the choice. On overwrite, remove the existing folder first.
+
+### 9d. Place the folder
+
+```sh
+mkdir -p "$MVP_HOME/plans"
+cp -R "<resolved-source-root>/." "$MVP_HOME/plans/<slug>/"
+```
+
+Remove the temp extraction directory if one was used.
+
+### 9e. Reconcile PROJECT_ROOT
+
+The orchestrator's **Project path** (`PROJECT_ROOT`) points at wherever the repo lived on the *origin* machine. Show it and offer to fix it:
+
+> This MVP was built against `PROJECT_ROOT = <path from orchestrator>`. Where does the repo live on *this* machine?
+> - Press enter to keep that path.
+> - Or paste the local path.
+
+If the user supplies a new path, rewrite the single **Project path** line in `$MVP_HOME/plans/<slug>/00-orchestrator.md`. Whether kept or changed, if the final path doesn't exist on disk, warn (don't block):
+
+> Note: `<path>` doesn't exist yet — clone the repo there or fix the Project path before executing.
+
+### 9f. Register
+
+Run the **Register an MVP from its orchestrator** routine (above) for `<slug>`.
+
+### 9g. Done
+
+> [imported] `<slug>` — placed at `$MVP_HOME/plans/<slug>/` and registered. Run `/create-mvp resume` to continue.
+
+Stop. Do not auto-execute.
+
+---
+
+## Phase 10 — Export a shared MVP
+
+Reached only when `export` was in `$ARGUMENTS` (Phase 0 routes here). Packages a plan folder into a portable archive for sharing — and **first verifies it's portable**: the only hardcoded absolute path allowed anywhere in the folder is the orchestrator's single **Project path** line; everything else must reference `MVP_PROJECT` / `PROJECT_ROOT`. The counterpart to import (Phase 9). Never executes build phases.
+
+### 10a. Select the MVP
+
+Pick the MVP using the same rules as 8a–8c: a `slug=<x>` arg, else CWD auto-pick against `project_path`, else the picker. Set `MVP_PROJECT="$MVP_HOME/plans/<slug>"`.
+
+### 10b. Verify the symbols (portability lint)
+
+Read the orchestrator. Let `P` = its **Project path** value (the `PROJECT_ROOT` definition) and `D` = the resolved `MVP_PROJECT` path. Scan every file under `MVP_PROJECT/` — orchestrator, phase plans, `adrs/`, `memory/` — for hardcoded paths that should be placeholders:
+
+- Any occurrence of the literal `P` **except** the one on the orchestrator's Project path line (that one is allowed — it defines `PROJECT_ROOT`).
+- Any occurrence of the literal `D`.
+- Other absolute-path markers: `$HOME`, `~/`, `/Users/`, `/home/`, and the resolved `MVP_HOME`.
+
+Report each hit as `file:line` with the offending text. If hits exist, offer to fix:
+
+> Found <N> hardcoded path(s) that should be placeholders. Rewrite them? (`PROJECT_ROOT` for the repo path, `MVP_PROJECT` for the plan dir) — yes / show / cancel
+
+- **yes** → replace literal `P` → `PROJECT_ROOT` (everywhere but the Project path line) and literal `D` → `MVP_PROJECT`, then re-scan.
+- A leak that is neither `P` nor `D` (some unrelated absolute path) can't be auto-rewritten — list it and require the user to fix it manually or explicitly confirm exporting anyway.
+
+A clean scan (or an explicit confirm-anyway) is required before packaging.
+
+**`verify-only`:** if that flag is present, stop here — print a pass/fail summary (clean, or the list of leaks) and do **not** package.
+
+### 10c. Package
+
+```sh
+out_dir="<out= arg, default: current directory>"
+( cd "$MVP_HOME/plans" && zip -qr "$out_dir/<slug>.zip" "<slug>" )
+```
+
+Zipping from `$MVP_HOME/plans` keeps `<slug>/00-orchestrator.md` as the archive's top-level wrapper — exactly what import (9a) expects.
+
+### 10d. Done
+
+> [exported] `<slug>` → `<out_dir>/<slug>.zip` (portability verified). Share it; the recipient runs `/create-mvp import <slug>.zip`.
+
+Stop.

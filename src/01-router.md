@@ -2,6 +2,8 @@
 
 Scan `$ARGUMENTS` for flags:
 
+- `import <path>` → enter **import mode**. The token after `import` is the source — a `.zip` or a directory. Skip directly to Phase 9 (Import) below.
+- `export` → enter **export mode**. Skip directly to Phase 10 (Export) below. `verify-only` alongside `export` runs the portability lint without packaging.
 - `resume` → enter **resume mode**. Skip directly to Phase 8 (Resume) below.
 - `slug=<x>` → resume mode only. Selects a specific MVP from the registry.
 - `phase=N` → resume mode only. Jumps to phase N (bypasses dep graph; warn first). If the user wrote "next phase" or similar shorthand and the next stage in the plan is **parallel** with multiple pending phases, do **not** silently pick one — ask whether they mean a specific phase number or all phases in that stage. Only proceed once disambiguated.
@@ -25,3 +27,19 @@ Announce:
 > Resume mode — looking up registered MVPs.
 
 Jump to Phase 8.
+
+### Import mode
+
+Announce:
+
+> Import mode — bringing in a shared MVP.
+
+Jump to Phase 9.
+
+### Export mode
+
+Announce:
+
+> Export mode — verifying and packaging an MVP for sharing.
+
+Jump to Phase 10.

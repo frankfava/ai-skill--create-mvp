@@ -7,6 +7,8 @@ A single slash command that turns a vague idea into a checkpointed, parallel-exe
 ```
 /create-mvp                    Interactive: requirements → plan → build
 /create-mvp resume             Resume an in-progress MVP
+/create-mvp import <path>      Import a shared MVP folder (.zip or dir) and register it
+/create-mvp export             Verify portability and package an MVP for sharing
 ```
 
 **The good stuff:**
@@ -95,6 +97,26 @@ Runs a 6-phase workflow:
 - `stop-after=N` halts after phase N. `phase=N` jumps to a specific phase (with a dependency warning).
 - `slug=<x>` selects a specific MVP from the registry.
 
+### `/create-mvp import <path>`
+
+Brings a plan folder produced on another machine into this machine's `$MVP_HOME` and registers it, so `/create-mvp resume` can pick it up.
+
+- `<path>` is a `.zip` or a directory. The plan folder must contain `00-orchestrator.md`.
+- Extracts (if a zip), locates the plan-folder root, and copies it to `$MVP_HOME/plans/<slug>/` (slug taken from the orchestrator; prompts on collision).
+- Reconciles `PROJECT_ROOT`: shows the origin machine's **Project path** and lets you point it at wherever the repo lives locally — rewriting that one line. Warns if the path doesn't exist yet.
+- Registers the MVP from its orchestrator, then tells you to run `/create-mvp resume`. Never executes build phases itself.
+
+### `/create-mvp export [verify-only]`
+
+Packages a plan folder into a portable `.zip` for sharing — the counterpart to `import`. **Verifies portability first.**
+
+- Selects the MVP the same way `resume` does (`slug=<x>`, CWD auto-pick, or picker).
+- **Portability lint** — scans the whole folder (orchestrator, phase plans, `adrs/`, `memory/`) for hardcoded absolute paths. The only one allowed is the orchestrator's **Project path** line; everything else must use `MVP_PROJECT` / `PROJECT_ROOT`. Offers to auto-rewrite obvious leaks (the repo path → `PROJECT_ROOT`, the plan dir → `MVP_PROJECT`); unrelated absolute paths are flagged for manual fix.
+- Zips from `$MVP_HOME/plans/` so the archive's top level is `<slug>/…` — exactly what `import` expects.
+- `verify-only` runs the lint and reports pass/fail without packaging.
+
+> **Sharing / porting an MVP.** The slug folder is self-describing — the orchestrator carries everything the registry needs (the registry is just a rebuildable local index that doesn't travel with the folder). So sharing is: run `/create-mvp export`, hand over the `.zip`, and the recipient runs `/create-mvp import <zip>`. If a registry is ever lost but the plan folders survive, `/create-mvp resume` offers to rebuild it from the orchestrators on disk.
+
 ---
 
 ## Design decisions
@@ -107,8 +129,8 @@ Plans are process artifacts, not project artifacts. They live at `$MVP_HOME/plan
 ### Plans carry no hardcoded absolute paths
 Plans reference two placeholders: `MVP_PROJECT` (the slug folder) and `PROJECT_ROOT` (the code repo). The only real absolute path in the whole folder is the orchestrator's **Project path** field — the single line a developer edits after cloning the repo to a different path. ADRs and agent memory live under `MVP_PROJECT/`, so they travel with the plan.
 
-### One command, two modes
-`/create-mvp` and `/create-mvp resume` are the same command. The Phase 0 router branches on the `resume` flag. One file to maintain, one runtime prompt, one cache key.
+### One command, four modes
+`/create-mvp`, `/create-mvp resume`, `/create-mvp import <path>`, and `/create-mvp export` are the same command. The Phase 0 router branches on the `resume` / `import` / `export` flags. One file to maintain, one runtime prompt, one cache key.
 
 ### Source is split into partials, runtime is one file
 `src/00-header.md` through `src/09-principles.md` are authored independently and concatenated by `install.sh` into a single `create-mvp.md`. Modular for humans, monolithic for the model.
@@ -160,6 +182,13 @@ For a worked illustration of an orchestrator with serial and parallel stages, se
 /create-mvp resume stop-after=plan                 # finish planning, then stop
 /create-mvp resume stop-after=5                    # execute up through phase 5
 /create-mvp resume phase=4                         # run phase 4 only (with warning)
+
+/create-mvp import ~/Downloads/todo-app-x7f3a.zip  # import a shared MVP, then resume
+/create-mvp import ../shared/todo-app-x7f3a        # import from a directory
+
+/create-mvp export                                 # verify + package the CWD's MVP for sharing
+/create-mvp export slug=todo-app-x7f3a out=~/share # package a specific MVP to a path
+/create-mvp export verify-only                     # portability lint only, no packaging
 ```
 
 ---
