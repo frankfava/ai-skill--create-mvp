@@ -5,6 +5,7 @@ example-orchestrator
 
 ## Project path
 /Users/example/projects/example-app
+<!-- This is PROJECT_ROOT — the only absolute path in this folder. Cloned the repo to a different path? Edit this one line and every PROJECT_ROOT reference resolves. -->
 
 ## Summary
 A two-page web app: a public landing page and a tiny admin form, backed by a single SQLite table. Illustrative only.

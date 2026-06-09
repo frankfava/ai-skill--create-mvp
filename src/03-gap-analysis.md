@@ -8,6 +8,14 @@ Ask exactly:
 
 Record the answer. If **outlive**, you will write ADRs during this phase. If **throwaway**, skip ADRs entirely.
 
+If **outlive**, ask one follow-up to fix the ADR location:
+
+> Where should ADRs live? They help your agent keep context as the MVP progresses.
+> 1. **`MVP_PROJECT/adrs/`** (default) — travels with the plan folder, stays out of the repo.
+> 2. **`PROJECT_ROOT/adrs/`** — committed alongside the code, becomes a permanent repo artifact.
+
+Record the choice. Default to option 1 (`MVP_PROJECT/adrs/`) if the user has no preference — for an MVP, ADRs are agent context, not yet a product commitment.
+
 ### 2b. Gap questions
 
 For each topic below not explicitly covered in Phase 1, ask a targeted question. Batch 2–3 related gaps per message. Accept "skip for MVP" as a valid answer — record it.
@@ -29,7 +37,7 @@ For each topic below not explicitly covered in Phase 1, ask a targeted question.
 
 As gap answers come in, write a short ADR for each **major** architectural decision — cap at 3–5 total. ADR-worthy: stack choice, data layer choice, auth approach, deployment target, major third-party dependency. Skip operational trivia.
 
-ADRs are project artifacts (committed alongside the code), so write them to `<project root>/adr/NNNN-<slug>.md`:
+Write each ADR to the location chosen in 2a — `MVP_PROJECT/adrs/NNNN-<slug>.md` by default, or `PROJECT_ROOT/adrs/NNNN-<slug>.md` if the user opted to commit them into the repo:
 
 ```markdown
 # NNNN: <title>

@@ -4,12 +4,12 @@ Plans go to `$MVP_HOME/plans/<slug>/` — NOT to the project. They're process ar
 
 ### 4a. Resolve project path and pick a slug
 
-Get the absolute project path: run `pwd`. Call this `PROJECT_PATH`.
+Get the absolute project path: run `pwd`. This is `PROJECT_ROOT` — the one absolute path the slug folder records.
 
 Compute a default slug:
 
 ```sh
-default_slug="$(basename "$PROJECT_PATH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g; s/^-//; s/-$//')-$(printf '%s' "$PROJECT_PATH" | shasum | cut -c1-6)"
+default_slug="$(basename "$PROJECT_ROOT" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g; s/^-//; s/-$//')-$(printf '%s' "$PROJECT_ROOT" | shasum | cut -c1-6)"
 ```
 
 Ask the user:
@@ -28,12 +28,18 @@ If the directory `$MVP_HOME/plans/<slug>/` already exists, ask:
 > 2. Pick another slug
 > 3. Resume that one (jump to Phase 8)
 
-Honor the user's choice. Record the final slug. Set `PLAN_DIR="$MVP_HOME/plans/<slug>"` (resolve `$MVP_HOME` once at this point and use the literal expanded path going forward).
+Honor the user's choice. Record the final slug. Set `MVP_PROJECT="$MVP_HOME/plans/<slug>"` (resolve `$MVP_HOME` once at this point and use the literal expanded path going forward).
 
 ### 4b. Bootstrap directories
 
 ```sh
-mkdir -p "$PLAN_DIR"
+mkdir -p "$MVP_PROJECT/memory"
+```
+
+`MVP_PROJECT/memory/` always exists — it's where the agent records code-style and workflow conventions (see 4g). If the longevity check chose the default ADR location, also create it:
+
+```sh
+mkdir -p "$MVP_PROJECT/adrs"   # only when outlive=true and ADRs default to MVP_PROJECT
 ```
 
 The installer should have created `$MVP_HOME/registry.json`, but defensively:
@@ -48,7 +54,7 @@ mkdir -p "$MVP_HOME"
 1. **Sketch pass** — write every phase file as a 5-line stub (objective + placeholder sections).
 2. **Fill pass** — expand each stub into the full plan. Go deep.
 
-### 4d. Orchestrator: `<PLAN_DIR>/00-orchestrator.md`
+### 4d. Orchestrator: `MVP_PROJECT/00-orchestrator.md`
 
 ```markdown
 # MVP Orchestrator
@@ -58,6 +64,7 @@ mkdir -p "$MVP_HOME"
 
 ## Project path
 <absolute path captured above>
+<!-- This is PROJECT_ROOT — the only absolute path in this folder. Cloned the repo to a different path? Edit this one line and every PROJECT_ROOT reference resolves. -->
 
 ## Summary
 <one paragraph from Phase 1>
@@ -109,9 +116,9 @@ After each phase:
 
 Status values: `pending` · `in-progress` · `blocked` · `done`.
 
-Phase file paths are **relative to PLAN_DIR** (not the project).
+Phase file paths are **relative to `MVP_PROJECT`** (not the project). Inside phase plans, reference code with `PROJECT_ROOT/…` and sibling plans with `MVP_PROJECT/…` — never a hardcoded absolute path.
 
-### 4e. Phase plans: `<PLAN_DIR>/NN-<slug>.md`
+### 4e. Phase plans: `MVP_PROJECT/NN-<slug>.md`
 
 ```markdown
 # Phase N: <n>
@@ -152,7 +159,7 @@ Update `$MVP_HOME/registry.json`. Read the file, parse JSON, add or update the e
 
 ```json
 "<slug>": {
-  "project_path": "<absolute project path>",
+  "project_path": "<PROJECT_ROOT — absolute project path>",
   "summary": "<one-line summary from Phase 1>",
   "longevity": "<throwaway|outlive>",
   "stop_point": "<none|after-plan|after-phase-N>",
@@ -165,11 +172,38 @@ Use `jq` if available (`jq '.entries["<slug>"] = { ... }' registry.json > tmp &&
 
 Subsequent phase completions only update `updated_at`. Progress is derived live from the orchestrator, so it doesn't need to be cached here.
 
-### 4g. Announce
+### 4g. Seed agent memory
+
+`MVP_PROJECT/memory/` is a portable store of **code-style and workflow** facts — conventions the build should follow and that subagents must pick up. It lives in the slug folder so it travels with the plan instead of being tied to a machine-local path.
+
+Format: one fact per file with frontmatter, plus a `MEMORY.md` index. (This mirrors the project-memory convention Claude Code uses; the spec below is self-contained, so any agent that reads this skill can follow it.)
+
+```markdown
+---
+name: <short-kebab-case-slug>
+description: <one-line summary — used to decide relevance during recall>
+metadata:
+  type: project | reference | feedback
+---
+
+<the fact. For workflow/style conventions, state the rule and a one-line why. Link related memories with [[their-name]].>
+```
+
+Seed `MVP_PROJECT/memory/MEMORY.md` as the index (one line per fact, `- [Title](file.md) — hook`):
+
+```markdown
+# Memory
+
+Code-style and workflow conventions for this MVP. One fact per file; this index lists them.
+```
+
+During the build, whenever a convention is decided or discovered (formatter, naming, test layout, commit style, a workflow rule the user gave), write it here as a memory file and add its index line — so every subagent inherits it. Reference these files with `MVP_PROJECT/memory/…`.
+
+### 4h. Announce
 
 After all files are written, list them and announce:
 
-> Orchestrator and phase plans written to `<PLAN_DIR>` — this MVP is now resumable via `/create-mvp resume`.
+> Orchestrator, phase plans, and `memory/` written to `MVP_PROJECT` — this MVP is now resumable via `/create-mvp resume`.
 > Slug: `<slug>`. Registered.
 
 Then ask for approval before Phase 5.

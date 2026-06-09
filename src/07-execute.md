@@ -5,7 +5,7 @@
 3. Run acceptance criteria → on pass: commit, mark `done`. On fail: **Failure protocol** (Phase 7).
 4. For each subsequent stage (in order):
    - **Serial stage** → execute its phases one at a time, in declared order, applying steps 2–3 to each.
-   - **Parallel stage** → if the user said "next phase" without naming one, confirm scope first (single phase number vs. all phases in this stage). Then launch one **Task** subagent per in-scope phase (model per 5b), input = phase plan file path (`<PLAN_DIR>/NN-...md`). Wait for all.
+   - **Parallel stage** → if the user said "next phase" without naming one, confirm scope first (single phase number vs. all phases in this stage). Then launch one **Task** subagent per in-scope phase (model per 5b), input = phase plan file path (`MVP_PROJECT/NN-...md`, resolved to its absolute path). Wait for all.
    - Launch **advisor subagent** (Opus) per completed phase to verify acceptance criteria.
    - Update orchestrator. Update registry `updated_at`. Commit code changes in the project repo.
 5. Honor stop point: if `stop-after=N` and phase N just finished, halt and announce resume instructions.
@@ -38,4 +38,4 @@ Execution revealed the requirements themselves are wrong, contradictory, or inco
 
 ### If requirements change mid-build
 
-Pause. Classify as REQUIREMENTS_GAP. Identify affected phase files in `<PLAN_DIR>`. Update them. Re-confirm with the user. Resume.
+Pause. Classify as REQUIREMENTS_GAP. Identify affected phase files in `MVP_PROJECT`. Update them. Re-confirm with the user. Resume.

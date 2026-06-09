@@ -77,9 +77,9 @@ The script reuses the same `src/*.md` partials as `install.sh`, but swaps the Cl
 Runs a 6-phase workflow:
 
 1. **Requirements** — open-ended questions, one at a time. Optionally seed from a PRD/RFC/plan path. Keeps asking *"what else?"* until you say **done**.
-2. **Gap analysis** — probes for stack, testing, auth, deployment, security, observability, etc. Asks whether the project is a throwaway or meant to outlive the MVP. If outlive: writes 3–5 ADRs (`adr/NNNN-*.md`) for the major architectural decisions. ADRs go in the project repo.
+2. **Gap analysis** — probes for stack, testing, auth, deployment, security, observability, etc. Asks whether the project is a throwaway or meant to outlive the MVP. If outlive: writes 3–5 ADRs (`adrs/NNNN-*.md`) for the major architectural decisions, defaulting to `MVP_PROJECT/adrs/` (opt-in to commit them into the repo instead).
 3. **Plan sketch** — drafts the phase breakdown in chat, with t-shirt sizing (S/M/L/XL), dependency graph, and parallel groups. Iterates until you confirm.
-4. **Plan files** — picks a slug (default `<basename>-<6char>`), writes `00-orchestrator.md` and per-phase plan files to `$MVP_HOME/plans/<slug>/`. Registers the MVP. Two-pass: stubs first, then deep fill.
+4. **Plan files** — picks a slug (default `<basename>-<6char>`), writes `00-orchestrator.md`, per-phase plan files, and a `memory/` folder to `$MVP_HOME/plans/<slug>/`. Registers the MVP. Two-pass: stubs first, then deep fill.
 5. **Build prep** — proposes permission wildcards, model mapping (Haiku/Sonnet/Opus driven by size), advisor subagent pattern, execution strategy. Checks if the project is a git repo and offers to initialise. Waits for your **go**.
 6. **Execute** — runs phases in parallel where the graph allows. An Opus advisor subagent reviews each phase against its acceptance criteria before marking `done`.
 
@@ -102,7 +102,10 @@ Runs a 6-phase workflow:
 A few choices that matter:
 
 ### Plans live centrally, not in the project
-Plans are process artifacts, not project artifacts. They live at `$MVP_HOME/plans/<slug>/` (default `~/.local/share/create-mvp/plans/<slug>/` on macOS/Linux) and don't pollute the project repo. ADRs (when written) DO go in the project — those are decisions worth committing.
+Plans are process artifacts, not project artifacts. They live at `$MVP_HOME/plans/<slug>/` (default `~/.local/share/create-mvp/plans/<slug>/` on macOS/Linux) and don't pollute the project repo.
+
+### Plans carry no hardcoded absolute paths
+Plans reference two placeholders: `MVP_PROJECT` (the slug folder) and `PROJECT_ROOT` (the code repo). The only real absolute path in the whole folder is the orchestrator's **Project path** field — the single line a developer edits after cloning the repo to a different path. ADRs and agent memory live under `MVP_PROJECT/`, so they travel with the plan.
 
 ### One command, two modes
 `/create-mvp` and `/create-mvp resume` are the same command. The Phase 0 router branches on the `resume` flag. One file to maintain, one runtime prompt, one cache key.
@@ -113,8 +116,11 @@ Plans are process artifacts, not project artifacts. They live at `$MVP_HOME/plan
 ### Optional doc seed in Phase 1
 If you have an existing PRD/RFC/plan, paste the path. The command reads it, extracts requirements, and asks *"is this complete?"* — only loops on what's missing.
 
-### ADRs are conditional
-The longevity branching question in Phase 2 decides whether ADRs get written. Throwaway prototypes skip them entirely.
+### ADRs are conditional, and default to the plan folder
+The longevity branching question in Phase 2 decides whether ADRs get written — throwaway prototypes skip them entirely. When written, they default to `MVP_PROJECT/adrs/`: for an MVP an ADR is agent context (it keeps the build coherent as it progresses), not yet a product commitment. If you expect the project to outlive the MVP, opt in to commit them into the repo's `adrs/` instead.
+
+### Agent memory travels with the plan
+`MVP_PROJECT/memory/` mirrors the agent's native project-memory format (one fact per file + a `MEMORY.md` index), relocated into the slug folder so it's portable. Code-style and workflow conventions decided during the build go here, so every subagent inherits them.
 
 ### T-shirt sizing, not token estimates
 Pre-code token estimates are false precision. S/M/L/XL is coarse enough to be honest and drives real decisions: model choice per phase, and iteration ceilings (S≈10 updates, XL≈100) that surface runaway loops.
@@ -167,18 +173,24 @@ For a worked illustration of an orchestrator with serial and parallel stages, se
 ~/.local/share/create-mvp/                  # = $MVP_HOME (XDG default; override via CREATE_MVP_HOME)
 ├── registry.json                           # slug → { project_path, summary, ... }
 └── plans/
-    └── <slug>/
-        ├── 00-orchestrator.md              # status, graph, stages
+    └── <slug>/                             # = MVP_PROJECT
+        ├── 00-orchestrator.md              # status, graph, stages; "Project path" = PROJECT_ROOT
         ├── 01-scaffold.md
         ├── 02-data.md
-        └── ...
+        ├── ...
+        ├── adrs/                           # default ADR home (only if "outlive" in Phase 2)
+        │   ├── 0001-stack-choice.md
+        │   └── ...
+        └── memory/                         # code-style & workflow facts, native memory format
+            ├── MEMORY.md                   # index
+            └── <fact>.md
 ```
 
 A target project itself stays clean:
 
 ```
-your-project/
-├── adr/                                    # only if "outlive" answer in Phase 2
+your-project/                               # = PROJECT_ROOT
+├── adrs/                                   # only if you opt to commit ADRs into the repo
 │   ├── 0001-stack-choice.md
 │   └── ...
 └── <your actual code>

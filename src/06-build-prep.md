@@ -28,7 +28,7 @@ Tell the user to add these via `/permissions`.
 
 ### 5c. Execution strategy
 
-- **Task** tool launches parallel subagents — one per phase in the current parallel stage, each given its phase plan file path (`<PLAN_DIR>/NN-...md`).
+- **Task** tool launches parallel subagents — one per phase in the current parallel stage, each given its phase plan file path (`MVP_PROJECT/NN-...md`, resolved to an absolute path at dispatch).
 - **TodoWrite** inside each phase tracks sub-tasks against the iteration ceiling.
 - Batch file reads/edits in single messages.
 - Commit after every phase (in the project repo, not the plan dir).

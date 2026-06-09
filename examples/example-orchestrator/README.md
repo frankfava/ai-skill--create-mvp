@@ -15,5 +15,6 @@ $MVP_HOME/plans/<slug>/00-orchestrator.md
 - **Three stages** — stage 1 serial (scaffold → config), stage 2 parallel (frontend ‖ backend), stage 3 serial (integrate → verify).
 - **Stage table** as the canonical place the orchestrator reasons about ordering.
 - A serial-stage phase (`01-scaffold.md`) and a parallel-stage phase (`03-frontend.md`) so both flavors are concrete.
+- **Portable paths** — the orchestrator's **Project path** is the only absolute path (it's `PROJECT_ROOT`); `03-frontend.md` references code as `PROJECT_ROOT/…` rather than hardcoding it. Clone the repo to a different path and only that one line needs editing.
 
 Phases `02-config.md`, `04-backend.md`, `05-integrate.md`, and `06-verify.md` are intentionally omitted — the two phase files included are enough to show the format.

@@ -10,11 +10,11 @@ Build the public landing page that lists items, plus the admin form for creating
 
 ## Inputs
 - Configured project from Phase 2.
-- API contract documented in `docs/api.md` (shared with Phase 4).
+- API contract documented in `PROJECT_ROOT/docs/api.md` (shared with Phase 4).
 
 ## Deliverables
-- `src/pages/index.tsx` (list) and `src/pages/admin.tsx` (form).
-- `src/lib/api.ts` thin client matching the contract.
+- `PROJECT_ROOT/src/pages/index.tsx` (list) and `PROJECT_ROOT/src/pages/admin.tsx` (form).
+- `PROJECT_ROOT/src/lib/api.ts` thin client matching the contract.
 
 ## Task breakdown
 - [ ] step 1 — render list page from a stubbed fetch (Phase 4 may not be done yet at fetch time, that's fine).
