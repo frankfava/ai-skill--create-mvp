@@ -852,5 +852,3 @@ Stop.
 - ADRs (when written) default to `MVP_PROJECT/adrs/` — for an MVP they're agent context, not yet a product commitment. Commit them into the repo's `adrs/` only if the user opts in. Throwaways skip ADRs.
 - `MVP_PROJECT/memory/` carries code-style and workflow conventions in the agent's native memory format, relocated so it travels with the plan. Write conventions there so every subagent inherits them.
 
-
-<!-- stale marker: force CI to rebuild -->
