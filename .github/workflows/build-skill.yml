@@ -1,0 +1,35 @@
+name: Build skill
+
+# Builds the cloud Claude Skill bundle from src/*.md and uploads it as a
+# workflow artifact. Nothing is committed back to the repo — download the
+# artifact from the run summary and upload it at claude.ai → Settings → Skills.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+      - export-skill.sh
+      - .github/workflows/build-skill.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build SKILL.md + .skill archive
+        run: sh export-skill.sh --skill --force --out dist
+
+      - name: Upload skill bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: create-mvp-skill
+          path: |
+            dist/create-mvp/SKILL.md
+            dist/create-mvp.skill
+          if-no-files-found: error
