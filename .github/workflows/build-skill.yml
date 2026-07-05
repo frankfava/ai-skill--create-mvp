@@ -1,14 +1,14 @@
-name: Build skill
+name: Sync skill
 
-# Builds the cloud Claude Skill bundle from src/*.md on every push to main and
-# publishes it to a rolling "latest" GitHub Release, so there is one permanent
-# download URL that always serves the newest build:
+# Rebuilds skill/create-mvp/SKILL.md from src/*.md on every push to main and
+# commits it back via the GitHub Contents API. API commits are GitHub-verified,
+# so they satisfy the "verified signatures" branch rule without a bypass.
 #
-#   https://github.com/frankfava/ai-skill--create-mvp/releases/download/latest/create-mvp.skill
-#   https://github.com/frankfava/ai-skill--create-mvp/releases/download/latest/SKILL.md
+# The committed folder is what the claude.ai GitHub importer reads:
+#   https://github.com/frankfava/ai-skill--create-mvp/tree/main/skill/create-mvp
 #
-# Nothing is committed back to the repo. The run also keeps a workflow artifact
-# for per-run debugging.
+# No self-trigger: the SKILL.md path is not a trigger path, GITHUB_TOKEN commits
+# don't start new runs, and the message carries [skip ci] as a third guard.
 
 on:
   push:
@@ -23,37 +23,42 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build SKILL.md + .skill archive
-        run: sh export-skill.sh --skill --force --out dist
+      - name: Build SKILL.md
+        run: sh export-skill.sh --out skill --no-zip --force
 
-      - name: Upload skill bundle (per-run artifact)
-        uses: actions/upload-artifact@v4
-        with:
-          name: create-mvp-skill
-          path: |
-            dist/create-mvp/SKILL.md
-            dist/create-mvp.skill
-          if-no-files-found: error
-
-      - name: Publish rolling "latest" release
+      - name: Commit SKILL.md via GitHub API (verified)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Create the 'latest' release once; thereafter just replace its
-          # assets. The download URL serves whatever asset is currently
-          # attached, so --clobber is what makes the newest build live.
-          if ! gh release view latest >/dev/null 2>&1; then
-            gh release create latest \
-              --title "Latest skill build" \
-              --notes "Rolling build of the create-mvp cloud skill from the newest main. Auto-updated on every push to main." \
-              --latest
+          set -eu
+          path="skill/create-mvp/SKILL.md"
+          branch="${GITHUB_REF_NAME}"
+
+          new_b64=$(base64 -w0 "$path")
+
+          # Current blob on the branch (empty if the file is new). GitHub wraps
+          # its base64 at 60 cols, so strip newlines before comparing.
+          cur_b64=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$branch" \
+            -q '.content' 2>/dev/null | tr -d '\n' || true)
+
+          if [ "$new_b64" = "$cur_b64" ]; then
+            echo "SKILL.md unchanged — nothing to commit."
+            exit 0
           fi
-          gh release upload latest \
-            dist/create-mvp.skill \
-            dist/create-mvp/SKILL.md \
-            --clobber
+
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$branch" \
+            -q '.sha' 2>/dev/null || true)
+
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+            -f message="chore: sync SKILL.md from src [skip ci]" \
+            -f content="$new_b64" \
+            -f branch="$branch" \
+            ${sha:+-f sha="$sha"} \
+            >/dev/null
+
+          echo "Committed updated SKILL.md (verified)."
