@@ -18,6 +18,7 @@ MARKER="generated-by: ai-skill-create-mvp export-skill.sh"
 OUT_DIR="$SCRIPT_DIR/dist"
 NO_ZIP=0
 FORCE=0
+ARCHIVE_EXT="zip"
 
 usage() {
     cat <<EOF
@@ -28,13 +29,15 @@ in numeric order and swapping the Claude-Code frontmatter for cloud-skill YAML.
 
 Options:
   --out PATH      Output root directory (default: $SCRIPT_DIR/dist)
-  --no-zip        Skip producing the .zip even if 'zip' is available
+  --skill         Name the archive $SKILL_NAME.skill instead of .zip
+                  (same zip format; .skill is Anthropic's native extension)
+  --no-zip        Skip producing the archive even if 'zip' is available
   --force         Overwrite existing SKILL.md without prompting
   -h, --help      Show this help
 
 Outputs:
   <out>/$SKILL_NAME/SKILL.md
-  <out>/$SKILL_NAME.zip   (when 'zip' is on PATH)
+  <out>/$SKILL_NAME.zip    (when 'zip' is on PATH; .skill with --skill)
 EOF
 }
 
@@ -48,6 +51,7 @@ while [ $# -gt 0 ]; do
             fi
             OUT_DIR="$1"
             ;;
+        --skill)  ARCHIVE_EXT="skill" ;;
         --no-zip) NO_ZIP=1 ;;
         --force)  FORCE=1 ;;
         -h|--help) usage; exit 0 ;;
@@ -180,15 +184,17 @@ else
 fi
 
 # Step 4: zip the folder as root (cloud spec requires `create-mvp/SKILL.md` inside).
-ZIP_PATH="$OUT_DIR/$SKILL_NAME.zip"
+# .skill and .zip are the same zip format — only the extension differs.
+ZIP_NAME="$SKILL_NAME.$ARCHIVE_EXT"
+ZIP_PATH="$OUT_DIR/$ZIP_NAME"
 if [ "$NO_ZIP" -eq 1 ]; then
-    echo "  [skip]    zip (--no-zip)"
+    echo "  [skip]    archive (--no-zip)"
 elif command -v zip >/dev/null 2>&1; then
     rm -f "$ZIP_PATH"
     # cd into OUT_DIR so the folder name is the zip root, not the absolute path.
-    ( cd "$OUT_DIR" && zip -rq "$SKILL_NAME.zip" "$SKILL_NAME" )
+    ( cd "$OUT_DIR" && zip -rq "$ZIP_NAME" "$SKILL_NAME" )
     zip_bytes=$(wc -c < "$ZIP_PATH" | tr -d ' ')
-    echo "  [zip]     $ZIP_PATH ($zip_bytes bytes)"
+    echo "  [$ARCHIVE_EXT]     $ZIP_PATH ($zip_bytes bytes)"
 else
     echo "  [skip]    zip not found — install 'zip' or pass --no-zip to silence"
 fi
@@ -199,4 +205,4 @@ if [ -f "$ZIP_PATH" ]; then
     echo "Archive:      $ZIP_PATH"
 fi
 echo ""
-echo "Upload the .zip (or the SKILL.md alone) at claude.ai → Settings → Skills."
+echo "Upload the .$ARCHIVE_EXT (or the SKILL.md alone) at claude.ai → Settings → Skills."

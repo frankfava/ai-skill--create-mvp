@@ -25,7 +25,7 @@ A single slash command that turns a vague idea into a checkpointed, parallel-exe
 |------|---------|
 | `src/*.md` | Source partials, concatenated at install time into one command file |
 | `install.sh` | POSIX installer for the Claude Code slash command (macOS, Linux, WSL, Git Bash) |
-| `export-skill.sh` | POSIX builder that packages the same source as a cloud Claude Skill (`SKILL.md` + `.zip`) |
+| `export-skill.sh` | POSIX builder that packages the same source as a cloud Claude Skill (`SKILL.md` + `.zip`/`.skill`) |
 | `examples/example-orchestrator/` | Illustrative orchestrator showing stages (serial + parallel) and phase files |
 
 The runtime command file lives at `~/.claude/commands/create-mvp.md` after install — the standard Skills/commands path read by Claude Code, Cursor, and other compatible agents.
@@ -61,12 +61,13 @@ For [cloud Claude Skills](https://support.claude.com/en/articles/12512198-how-to
 
 ```sh
 sh export-skill.sh              # builds dist/create-mvp/SKILL.md + dist/create-mvp.zip
+sh export-skill.sh --skill      # name the archive create-mvp.skill instead of .zip
 sh export-skill.sh --no-zip     # SKILL.md only, skip the archive
 sh export-skill.sh --out PATH   # custom output root
 sh export-skill.sh --force      # overwrite without prompting
 ```
 
-The script reuses the same `src/*.md` partials as `install.sh`, but swaps the Claude-Code frontmatter for the cloud-skill format (`name` + `description`) and writes `SKILL.md` (capitalised, as the spec requires). The `.zip` contains `create-mvp/SKILL.md` at the root — drop it into the Skills uploader as-is.
+The script reuses the same `src/*.md` partials as `install.sh`, but swaps the Claude-Code frontmatter for the cloud-skill format (`name` + `description`) and writes `SKILL.md` (capitalised, as the spec requires). The archive contains `create-mvp/SKILL.md` at the root — drop it into the Skills uploader as-is. `--skill` produces the same zip under Anthropic's native `.skill` extension (the form Claude emits when it packages a skill); plain `.zip` uploads identically.
 
 > **Note:** the body of the skill is identical to the Claude Code command and references Claude-Code-specific bits like `$ARGUMENTS` and the local `MVP_HOME` filesystem path. Inside a cloud sandbox those won't substitute the same way; treat the cloud skill as a best-effort copy of the workflow for now.
 
