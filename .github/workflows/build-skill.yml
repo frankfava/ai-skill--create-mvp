@@ -1,8 +1,14 @@
 name: Build skill
 
-# Builds the cloud Claude Skill bundle from src/*.md and uploads it as a
-# workflow artifact. Nothing is committed back to the repo — download the
-# artifact from the run summary and upload it at claude.ai → Settings → Skills.
+# Builds the cloud Claude Skill bundle from src/*.md on every push to main and
+# publishes it to a rolling "latest" GitHub Release, so there is one permanent
+# download URL that always serves the newest build:
+#
+#   https://github.com/frankfava/ai-skill--create-mvp/releases/download/latest/create-mvp.skill
+#   https://github.com/frankfava/ai-skill--create-mvp/releases/download/latest/SKILL.md
+#
+# Nothing is committed back to the repo. The run also keeps a workflow artifact
+# for per-run debugging.
 
 on:
   push:
@@ -14,7 +20,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -25,7 +31,7 @@ jobs:
       - name: Build SKILL.md + .skill archive
         run: sh export-skill.sh --skill --force --out dist
 
-      - name: Upload skill bundle
+      - name: Upload skill bundle (per-run artifact)
         uses: actions/upload-artifact@v4
         with:
           name: create-mvp-skill
@@ -33,3 +39,21 @@ jobs:
             dist/create-mvp/SKILL.md
             dist/create-mvp.skill
           if-no-files-found: error
+
+      - name: Publish rolling "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Create the 'latest' release once; thereafter just replace its
+          # assets. The download URL serves whatever asset is currently
+          # attached, so --clobber is what makes the newest build live.
+          if ! gh release view latest >/dev/null 2>&1; then
+            gh release create latest \
+              --title "Latest skill build" \
+              --notes "Rolling build of the create-mvp cloud skill from the newest main. Auto-updated on every push to main." \
+              --latest
+          fi
+          gh release upload latest \
+            dist/create-mvp.skill \
+            dist/create-mvp/SKILL.md \
+            --clobber
